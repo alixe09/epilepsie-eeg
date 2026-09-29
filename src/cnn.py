@@ -5,7 +5,7 @@ représentent que ~0,3 % du temps : chaque lot d'entraînement est tiré à moit
 dans les crises (avec décalage temporel aléatoire, donc des fenêtres toujours
 un peu différentes) et à moitié dans le reste de l'enregistrement.
 
-Usage : python src/cnn.py [chb01 ...]
+Usage : python src/cnn.py [--decoupage chrono] [chb01 ...]
 """
 import argparse
 import json
@@ -19,7 +19,7 @@ import numpy as np
 import tensorflow as tf
 
 from classique import SEUIL_ICTAL
-from decoupage import plis
+from decoupage import iterations, plis
 from donnees import PATIENTS, RACINE, charger, lister_enregistrements
 from pretraitement import DUREE_FENETRE, FS, N_FENETRE, filtrer, fenetres
 
@@ -126,41 +126,42 @@ def predire(modele, signal, ecart, taille=1024):
         for i in range(0, len(f), taille)]) if len(f) else np.zeros(0)
 
 
-def main(patients):
+def main(patients, decoupage="plis"):
     DOSSIER_PROBAS.mkdir(parents=True, exist_ok=True)
     DOSSIER_MODELES.mkdir(parents=True, exist_ok=True)
     tf.keras.utils.set_random_seed(0)
+    prefixe = "cnn" if decoupage == "plis" else "cnn_chrono"
     for p in patients:
-        if (DOSSIER_PROBAS / f"cnn_{p}.npz").exists():
+        if (DOSSIER_PROBAS / f"{prefixe}_{p}.npz").exists():
             print(f"{p} : déjà fait", flush=True)
             continue
         t0 = time.time()
         pat = Patient(p)
-        probas = [None] * len(pat.noms)
-        for k in np.unique(pat.pli):
-            app = np.flatnonzero(pat.pli != k)
+        # NaN : enregistrement jamais testé (calibration du scénario chronologique)
+        probas = [np.full(len(fenetres(s)), np.nan, np.float32) for s in pat.signaux]
+        for k, (app, test) in enumerate(iterations(pat.crises, decoupage)):
             ecart = pat.normalisation(app)
             modele = construire_modele()
-            lots = Lots(pat, app, ecart, graine=int(k))
+            lots = Lots(pat, app, ecart, graine=k)
             modele.fit(lots, epochs=EPOQUES, verbose=0)
             # contrôle : le modèle doit séparer ses propres données d'entraînement en inférence
             x, y = zip(*(lots[j] for j in range(8)))
             p_app = modele.predict_on_batch(np.concatenate(x))[:, 0]
             y = np.concatenate(y)
             controle = (float(p_app[y == 0].mean()), float(p_app[y == 1].mean()))
-            for i in np.flatnonzero(pat.pli == k):
+            for i in test:
                 probas[i] = predire(modele, pat.signaux[i], ecart)
-            nom = f"cnn_{p}_pli{k}"
-            modele.save(DOSSIER_MODELES / f"{nom}.keras")
-            (DOSSIER_MODELES / f"{nom}_norm.json").write_text(json.dumps({
-                "ecart_uv": ecart.tolist(), "ecretage": ECRETAGE,
-                "test": [pat.noms[i] for i in np.flatnonzero(pat.pli == k)]}, indent=1))
-            print(f"  {p} pli {k} : {time.time() - t0:.0f} s, proba moyenne sur l'entraînement "
+            if decoupage == "plis":  # modèles gardés pour l'export int8 et la démo
+                nom = f"cnn_{p}_pli{k}"
+                modele.save(DOSSIER_MODELES / f"{nom}.keras")
+                (DOSSIER_MODELES / f"{nom}_norm.json").write_text(json.dumps({
+                    "ecart_uv": ecart.tolist(), "ecretage": ECRETAGE,
+                    "test": [pat.noms[i] for i in test]}, indent=1))
+            print(f"  {p} {decoupage} {k} : {time.time() - t0:.0f} s, proba moyenne sur l'entraînement "
                   f"hors crise {controle[0]:.3f} / crise {controle[1]:.3f}", flush=True)
             del modele
             tf.keras.backend.clear_session()
-        np.savez(DOSSIER_PROBAS / f"cnn_{p}.npz", proba=np.concatenate(probas).astype(np.float32),
-                 pli=pat.pli)
+        np.savez(DOSSIER_PROBAS / f"{prefixe}_{p}.npz", proba=np.concatenate(probas).astype(np.float32))
         print(f"{p} : {time.time() - t0:.0f} s", flush=True)
         del pat
 
@@ -168,4 +169,6 @@ def main(patients):
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
     a.add_argument("patients", nargs="*", default=PATIENTS)
-    main(a.parse_args().patients)
+    a.add_argument("--decoupage", default="plis", choices=["plis", "chrono"])
+    args = a.parse_args()
+    main(args.patients, args.decoupage)

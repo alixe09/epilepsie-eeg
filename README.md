@@ -24,11 +24,17 @@ dispositif médical.
 
 ## En bref
 
-- **166 h d'EEG, 6 enfants, 50 crises** (CHB-MIT). Chaque heure est testée par un modèle
-  qui ne l'a jamais vue, et le réglage d'alarme de chaque patient est choisi **sur les
-  5 autres**.
-- **Méthode classique : 35 crises sur 50 détectées, 1,0 fausse alarme par 24 h**, délai
-  médian 13 s. **Le CNN fait moins bien : 28 / 50** au même niveau de fausses alarmes.
+- **166 h d'EEG, 6 enfants, 50 crises** (CHB-MIT). Le réglage d'alarme de chaque patient
+  est toujours choisi **sur les 5 autres**.
+- **Scénario « dispositif », dans l'ordre du temps** (calibration sur les 3 premières
+  crises, puis surveillance avec un modèle qui ne connaît que le passé) : **méthode
+  classique 22 / 31 crises**, CNN 16 / 31. Les fausses alarmes (5,9 et 2,5 par 24 h)
+  viennent presque toutes d'un seul patient (chb24).
+- **Validation croisée** (toutes les crises, modèles entraînés aussi sur des heures
+  postérieures au test) : méthode classique 35 / 50 à 1,0 fausse alarme par 24 h, CNN
+  28 / 50. Délai médian 10 à 13 s selon la méthode et le scénario.
+- **La méthode classique détecte plus de crises dans les deux scénarios** ; le CNN
+  détecte un peu plus vite.
 - **Le CNN tient dans 29 Ko en int8**, sans perte clinique par rapport au float.
 - **Un résultat corrigé en route** : avec une grille de seuils arrêtée à 0,999, le CNN
   semblait à égalité (35 / 50). C'était un effet de bord de la grille (détails plus bas).
@@ -84,6 +90,13 @@ passe-bande 0,5–40 Hz (Butterworth, filtrage avant uniquement), fenêtres de 4
   chaque heure est testée une fois.
 - **Des probabilités aux alarmes** : moyenne des *n* dernières décisions, alarme au
   franchissement du seuil, puis 60 s sans nouvelle alarme.
+- **Deux scénarios de découpage** :
+  - **chronologique (principal, comme l'usage prévu)** : les enregistrements jusqu'à la
+    3ᵉ crise servent à calibrer et ne sont jamais testés ; chaque enregistrement suivant
+    est testé par un modèle entraîné **uniquement sur ce qui précède**, ré-entraîné après
+    chaque nouvelle crise. 31 crises et 107 h testées ;
+  - **validation croisée** : les plis mélangent passé et futur, mais toutes les crises
+    (50) et toutes les heures (166 h) sont testées.
 - **Réglage d'usine** : le seuil et *n* d'un patient sont choisis sur les 5 autres, avec
   une règle fixée à l'avance : maximiser la sensibilité sous la contrainte de ≤ 1 fausse
   alarme par 24 h en moyenne.
@@ -92,6 +105,44 @@ passe-bande 0,5–40 Hz (Butterworth, filtrage avant uniquement), fenêtres de 4
   après sa fin ; toute autre alarme est fausse.
 
 ## Résultats
+
+### Scénario dispositif (chronologique) — résultat principal
+
+Calibration sur les enregistrements jusqu'à la 3ᵉ crise, puis surveillance ; le modèle
+est ré-entraîné après chaque nouvelle crise avec tout le passé
+([`src/decoupage.py`](src/decoupage.py), `--decoupage chrono`). CNN évalué en float
+(l'int8 donne les mêmes décisions à ≥ 99,8 %).
+
+| Patient (heures testées) | Classique : crises | FA / 24 h | CNN : crises | FA / 24 h |
+|---|---|---|---|---|
+| chb01 (25,6 h) | 4 / 4 | 0,0 | 4 / 4 | 0,0 |
+| chb05 (23,0 h) | 2 / 2 | 0,0 | 2 / 2 | 0,0 |
+| chb08 (14,0 h) | 2 / 2 | **0,0** | 2 / 2 | 1,7 |
+| chb16 (5,0 h) | 0 / 7 | 0,0 | 0 / 7 | 0,0 |
+| chb23 (20,9 h) | **2 / 4** | 0,0 | 0 / 4 | 0,0 |
+| chb24 (18,3 h) | **12 / 12** | 34,1 | 8 / 12 | **13,1** |
+| **Total, 107 h** | **22 / 31** | 5,9 | 16 / 31 | **2,5** |
+
+Délai médian : 13 s (classique), 10 s (CNN).
+
+Lecture :
+
+- **Trois patients restent au niveau de la validation croisée** (chb01, chb05, chb08 :
+  toutes les crises, 0 à 1,7 fausse alarme par jour). Apprendre seulement sur le passé
+  ne les pénalise pas.
+- **chb24 révèle un vrai problème de dérive** : en validation croisée, 3,4 à 6,8 fausses
+  alarmes par jour ; ici, 13 à 34. Les modèles appris sur les premières heures se
+  trompent davantage sur les heures suivantes. Pour un dispositif, cela plaide pour une
+  recalibration régulière, y compris sur les fausses alarmes signalées par les aidants.
+- **chb23 perd des crises** (2 / 4 et 0 / 4) : ses 3 crises de calibration ne suffisent
+  pas à reconnaître les 4 suivantes, toutes dans le même enregistrement de 4 h.
+- **La hiérarchie des méthodes ne change pas** : la méthode classique détecte plus de
+  crises (22 contre 16) ; le CNN fait moins de fausses alarmes chez chb24, mais en
+  manque 4.
+- **Seuls 31 crises et 107 h sont testées** : ce scénario est plus réaliste mais encore
+  moins précis statistiquement.
+
+### Validation croisée (toutes les crises)
 
 | Patient | Classique : crises | FA / 24 h | Délai méd. | CNN int8 : crises | FA / 24 h | Délai méd. |
 |---|---|---|---|---|---|---|
@@ -145,7 +196,7 @@ Lecture :
   alarmes.
 
 Détails par patient et courbes complètes : `resultats/resume_*.json`, régénérés par
-`python src/resumer.py classique cnn cnn_int8 classique_temporaux`.
+`python src/resumer.py classique cnn cnn_int8 classique_temporaux classique_chrono cnn_chrono`.
 
 ### Embarqué
 
@@ -176,8 +227,11 @@ crise, et toutes les probabilités basses tombaient à 0,5.
 - Le CNN dépend de seuils extrêmes (0,9995 à 0,999999) : une probabilité aussi saturée
   est fragile (calibration, dérive du signal). Un seuil sur le logit ou une calibration
   des probabilités par patient seraient à essayer.
-- Plis non chronologiques (un modèle peut s'entraîner sur des heures postérieures au
-  test), comme la plupart des travaux sur CHB-MIT.
+- Le scénario chronologique ne teste que 31 crises (107 h), dont 7 crises en 5 h pour
+  chb16. La validation croisée teste tout, mais laisse les modèles apprendre sur des
+  heures postérieures au test (comme la plupart des travaux sur CHB-MIT).
+- chb24 n'a pas d'horodatage dans CHB-MIT : l'ordre chronologique de ses enregistrements
+  est supposé suivre leur numérotation.
 
 ## Dossier « dispositif médical » et tests
 
@@ -200,7 +254,7 @@ La démarche a trouvé **trois défauts, corrigés avant les résultats finaux**
    réelles au plus et aucune fenêtre de crise.
 
 ```bash
-python -m pytest tests            # 22 tests : signal, métriques cliniques, sécurité, modèle int8, démo
+python -m pytest tests            # 23 tests : signal, métriques cliniques, sécurité, modèle int8, démo
 python src/verification_report.py # relance les tests et régénère la matrice de traçabilité
 ```
 
@@ -236,7 +290,7 @@ En ligne : [https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/
 
 ## Reproduire
 
-Python 3.12, dépendances dans `requirements.txt` (~45 min de calcul sur un portable
+Python 3.12, dépendances dans `requirements.txt` (~1 h 30 de calcul sur un portable
 sans GPU, hors téléchargement).
 
 ```bash
@@ -246,7 +300,9 @@ python src/classique.py
 python src/classique.py --canaux temporaux
 python src/cnn.py                         # 23 modèles (un par patient et par pli)
 python src/export_tflite.py               # int8 + probabilités int8
-python src/resumer.py classique classique_temporaux cnn cnn_int8
+python src/classique.py --decoupage chrono     # scénario chronologique
+python src/cnn.py --decoupage chrono
+python src/resumer.py classique classique_temporaux cnn cnn_int8 classique_chrono cnn_chrono
 python src/robustesse.py
 python src/embarque.py
 python src/make_demo_data.py
@@ -265,7 +321,7 @@ src/
   decoupage.py  evaluation.py  resumer.py        validation croisée, alarmes, métriques cliniques
   robustesse.py  verification_report.py          analyse des risques, traçabilité
   make_demo_data.py  figures.py
-tests/                                           22 tests pytest
+tests/                                           23 tests pytest
 app/                                             démo Streamlit (4 extraits, 8 Mo)
 resultats/                                       résumés JSON, modèles int8 (.tflite)
 docs/                                            figures, dossier dispositif médical

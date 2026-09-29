@@ -49,3 +49,13 @@ def test_plis_chaque_pli_teste_une_crise():
     for k in range(4):
         assert any(len(crises[i]) for i in np.flatnonzero(pli == k))
     assert set(pli) == {0, 1, 2, 3}
+
+
+def test_blocs_chronologiques_n_utilisent_que_le_passe():
+    from decoupage import blocs_chronologiques
+    c1, c0 = np.ones((1, 2)), np.zeros((0, 2))
+    crises = [c0, c1, c1, c0, c1, c0, c0, c1, c0]
+    bloc = blocs_chronologiques(crises, 3)
+    np.testing.assert_array_equal(bloc, [0, 0, 0, 0, 0, 1, 1, 1, 2])
+    for b in range(1, bloc.max() + 1):  # tout l'entraînement précède le test
+        assert np.flatnonzero(bloc < b).max() < np.flatnonzero(bloc == b).min()

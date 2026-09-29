@@ -66,8 +66,9 @@ def evaluer(alarmes_par_fichier, crises_par_fichier, durees):
     }
 
 
-def evaluer_probas(proba, fichier, t, crises, durees, seuil, n_lissage):
-    """Raccourci : probabilités concaténées (avec index d'enregistrement) -> métriques."""
-    als = [alarmes(proba[fichier == i], t[fichier == i], seuil, n_lissage)
-           for i in range(len(durees))]
-    return evaluer(als, crises, durees)
+def evaluer_probas(proba, fichier, t, crises, durees, seuil, n_lissage, fichiers=None):
+    """Raccourci : probabilités concaténées (avec index d'enregistrement) -> métriques,
+    sur les enregistrements `fichiers` (tous par défaut)."""
+    fichiers = range(len(durees)) if fichiers is None else fichiers
+    als = [alarmes(proba[fichier == i], t[fichier == i], seuil, n_lissage) for i in fichiers]
+    return evaluer(als, [crises[i] for i in fichiers], [durees[i] for i in fichiers])

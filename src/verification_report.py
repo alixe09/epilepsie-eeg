@@ -11,7 +11,13 @@ from donnees import RACINE
 
 RES = RACINE / "resultats"
 SORTIE = RACINE / "docs" / "dispositif-medical" / "03-matrice-tracabilite.md"
-METHODES = {"classique": "classique", "cnn_int8": "CNN int8"}
+# scénario principal (chronologique, comme l'usage prévu) puis validation croisée
+SCENARIOS = {
+    "Chronologique (calibration sur 3 crises, puis surveillance)":
+        {"classique_chrono": "classique", "cnn_chrono": "CNN"},
+    "Validation croisée (50 crises)": {"classique": "classique", "cnn_int8": "CNN int8"},
+}
+METHODES = {m: n for sc in SCENARIOS.values() for m, n in sc.items()}
 
 
 def tests():
@@ -39,18 +45,21 @@ def main():
 
     def par_patient(cle, fmt, cond):
         cellules, conforme = [], True
-        for m, nom in METHODES.items():
-            ko = [l["patient"] for l in r[m]["patients"] if not cond(l[cle])]
-            conforme &= not ko
-            cellules.append(f"{nom} : {fmt(r[m])}" + (f" — **hors cible : {', '.join(ko)}**" if ko else ""))
+        for scenario, methodes in SCENARIOS.items():
+            cellules.append(f"*{scenario.split(' (')[0]}*")
+            for m, nom in methodes.items():
+                ko = [l["patient"] for l in r[m]["patients"] if not cond(l[cle])]
+                conforme &= not ko
+                cellules.append(f"{nom} : {fmt(r[m])}" + (f" — **hors cible : {', '.join(ko)}**" if ko else ""))
         return "<br>".join(cellules), conforme
 
     lignes = []
     txt, ok = par_patient(
         "sensibilite", lambda x: f"{x['total']['detectees']}/{x['total']['crises']} crises",
         lambda v: v >= 0.9)
-    lignes.append(("EX-01", "Sensibilité ≥ 90 % par patient", "Validation croisée par enregistrement, "
-                   "166 h, 50 crises, réglage choisi sur les autres patients", txt, statut(ok)))
+    lignes.append(("EX-01", "Sensibilité ≥ 90 % par patient", "Scénario chronologique (modèle entraîné "
+                   "sur le passé seulement) et validation croisée par enregistrement ; réglage choisi "
+                   "sur les autres patients", txt, statut(ok)))
     txt, ok = par_patient(
         "fa_par_24h", lambda x: f"{x['total']['fa_par_24h_globale']:.2f} FA/24 h au total",
         lambda v: v <= 1.0)

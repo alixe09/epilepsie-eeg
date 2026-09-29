@@ -1,9 +1,11 @@
 """Méthode classique : caractéristiques par canal + gradient boosting, par patient.
 
 Sauvegarde les probabilités hors-pli (chaque fenêtre prédite par un modèle qui
-ne l'a pas vue) dans resultats/probas/classique_<patient>.npz.
+ne l'a pas vue) dans resultats/probas/classique_<patient>.npz. Avec
+--decoupage chrono : calibration puis surveillance dans l'ordre du temps
+(classique_chrono_<patient>.npz ; NaN sur les enregistrements de calibration).
 
-Usage : python src/classique.py [--canaux temporaux] [chb01 ...]
+Usage : python src/classique.py [--canaux temporaux] [--decoupage chrono] [chb01 ...]
 """
 import argparse
 import time
@@ -12,7 +14,7 @@ import numpy as np
 from sklearn.ensemble import HistGradientBoostingClassifier
 
 from caracteristiques import NOMS_PAR_CANAL, charger_patient
-from decoupage import plis
+from decoupage import iterations
 from donnees import PATIENTS, RACINE
 
 DOSSIER_PROBAS = RACINE / "resultats" / "probas"
@@ -43,29 +45,30 @@ def exemples_entrainement(frac):
     return garder, (frac >= SEUIL_ICTAL).astype(int)
 
 
-def main(patients, montage):
+def main(patients, montage, decoupage="plis"):
     DOSSIER_PROBAS.mkdir(parents=True, exist_ok=True)
     cols = colonnes(montage)
     for p in patients:
         t0 = time.time()
         d = charger_patient(p)
         X = d["X"][:, cols]
-        pli_fichier = plis(d["crises"])
-        pli = pli_fichier[d["fichier"]]
         garder, y = exemples_entrainement(d["frac"])
-        proba = np.zeros(len(X), np.float32)
-        for k in np.unique(pli_fichier):
-            app = (pli != k) & garder
+        proba = np.full(len(X), np.nan, np.float32)
+        its = iterations(d["crises"], decoupage)
+        for app_f, test_f in its:
+            app = np.isin(d["fichier"], app_f) & garder
+            test = np.isin(d["fichier"], test_f)
             modele = entrainer(X[app], y[app])
-            proba[pli == k] = modele.predict_proba(X[pli == k])[:, 1]
-        suffixe = "" if montage == "complet" else f"_{montage}"
-        np.savez(DOSSIER_PROBAS / f"classique{suffixe}_{p}.npz", proba=proba, pli=pli_fichier)
-        print(f"{p} ({montage}) : {len(np.unique(pli_fichier))} plis, {time.time() - t0:.0f} s")
+            proba[test] = modele.predict_proba(X[test])[:, 1]
+        suffixe = ("" if montage == "complet" else f"_{montage}") + ("" if decoupage == "plis" else "_chrono")
+        np.savez(DOSSIER_PROBAS / f"classique{suffixe}_{p}.npz", proba=proba)
+        print(f"{p} ({montage}, {decoupage}) : {len(its)} entraînements, {time.time() - t0:.0f} s", flush=True)
 
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
     a.add_argument("patients", nargs="*", default=PATIENTS)
     a.add_argument("--canaux", default="complet", choices=list(MONTAGES))
+    a.add_argument("--decoupage", default="plis", choices=["plis", "chrono"])
     args = a.parse_args()
-    main(args.patients, args.canaux)
+    main(args.patients, args.canaux, args.decoupage)

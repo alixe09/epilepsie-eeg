@@ -20,9 +20,9 @@ d'une fois par mois) · rare (moins) · non estimée.
 
 | ID | Danger → situation dangereuse → dommage | Gravité | Avant mesures | Mesures de réduction (vérification) | Après mesures | Risque résiduel |
 |---|---|---|---|---|---|---|
-| **R1** | Crise non détectée → l'aidant n'est pas prévenu → blessure, crise prolongée non traitée | 3–4 | — | Modèle par patient ; lissage et seuil réglés sur d'autres patients (EX-01) ; journal relu par le neurologue | **Classique : 15 crises manquées sur 50 (30 %)** (10 chez chb16, 4 chez chb24, 1 chez chb01). **CNN int8 : 22 sur 50 (44 %)** (10 chez chb16, 9 chez chb24, 3 chez chb23) | ❌ |
+| **R1** | Crise non détectée → l'aidant n'est pas prévenu → blessure, crise prolongée non traitée | 3–4 | — | Modèle par patient ; lissage et seuil réglés sur d'autres patients (EX-01) ; journal relu par le neurologue | Validation croisée : **classique 15 crises manquées sur 50 (30 %)**, **CNN int8 22 sur 50 (44 %)**. Scénario chronologique (usage prévu) : **classique 9 sur 31 (29 %)**, **CNN 15 sur 31 (48 %)**. Toujours toutes les crises de chb16 ; aussi chb23 en chronologique | ❌ |
 | **R2** | **Crise brève (< 15 s) jamais détectée** : le lissage sur 10 s, choisi sur des patients aux crises longues, l'empêche de franchir le seuil (constaté) | 3 | chb16 : 0 / 10 | Proposé : réglage du lissage par patient lors de la calibration ; avec un réglage individuel, la méthode classique en détecte 3 / 10 sans fausse alarme | Non corrigé | ❌ pour ce type de patient |
-| **R3** | Fausse alarme → réveil de la famille ; répétée → fatigue d'alarme, appareil désactivé → retour à R1 | 2 | Seuil bas : plus de 300 FA / 24 h (CNN, chb08) | M1 lissage + seuil ; M2 période réfractaire de 60 s ; réglage sous contrainte ≤ 1 FA / 24 h (EX-02) | **1,0 FA / 24 h au total**, mais **3,4 à 6,8 chez chb24**, 2,4 chez chb08 et 1,8 chez chb23 (CNN) | ⚠️ (❌ chb24) |
+| **R3** | Fausse alarme → réveil de la famille ; répétée → fatigue d'alarme, appareil désactivé → retour à R1 | 2 | Seuil bas : plus de 300 FA / 24 h (CNN, chb08) | M1 lissage + seuil ; M2 période réfractaire de 60 s ; réglage sous contrainte ≤ 1 FA / 24 h (EX-02) | Validation croisée : **1,0 FA / 24 h au total**, mais 3,4 à 6,8 chez chb24. **Scénario chronologique : 2,5 (CNN) à 5,9 (classique) au total, 13 à 34 chez chb24** : les modèles appris sur le début de l'enregistrement dérivent. **Proposé** : recalibration régulière intégrant les fausses alarmes signalées par l'aidant | ⚠️ (❌ chb24) |
 | **R4** | **Artefact de mouvement pris pour une crise** : un balancement de 800 µV à 1,5 Hz ajouté à un EEG réel est classé « crise » dans 100 % des fenêtres par le CNN et 71 % par la méthode classique (constaté, `src/robustesse.py`) | 2 (FA) | Chaque mouvement rythmique ample | Le contrôle de qualité (R5) ne le détecte pas (amplitude plausible). **Proposé** : accéléromètre dans le boîtier (comme les détecteurs portés du commerce) ; apprentissage avec des artefacts | Non corrigé | ❌ en ambulatoire (CHB-MIT : patients alités) |
 | **R5** | Électrode décollée, appareil déconnecté, saturation → décision sur un signal faux | 3 | Non mesuré | M3 contrôle de qualité (`src/qualite_signal.py`) : > 4 dérivations plates ou saturées → pas de décision « crise », défaut signalé à l'aidant (EX-07) | Déconnexion et saturation bloquées (6 tests). Sur les 166 h réelles : ≤ 0,016 % de fenêtres bloquées, **aucune fenêtre de crise** | ✅ défauts testés · ⚠️ 1–4 électrodes décollées : analysé quand même, non évalué |
 | **R6** | Seuil de saturation trop bas → une vraie crise de forte amplitude est bloquée | 3 | Seuil initial à 1 500 µV : des crises atteignent 2 400 µV (chb24, mesuré) | Seuil relevé à 3 000 µV, proche de la limite de mesure ; test `test_crise_de_forte_amplitude_non_bloquee` | Marge de 25 % seulement | ⚠️ |
@@ -47,8 +47,9 @@ enregistrement, les probabilités int8 elles-mêmes et l'amplitude des vraies cr
 - Les défauts **techniques** (capteur débranché, saturation, portage int8,
   modèle dégénéré, causalité) sont maîtrisés et vérifiés par des tests.
 - Les risques liés à la **performance de détection** restent inacceptables pour
-  une mise sur le marché : 30 % (classique) à 44 % (CNN) de crises manquées, un
-  patient entier non détecté (crises brèves), un patient à 3–7 fausses alarmes par jour.
+  une mise sur le marché : 29 à 48 % de crises manquées selon la méthode et le
+  scénario, un patient entier non détecté (crises brèves), un patient à 13–34 fausses
+  alarmes par jour dans le scénario chronologique (dérive).
 - Le risque **artefact de mouvement** (R4) n'est pas évaluable sur CHB-MIT
   (patients hospitalisés) et serait probablement dominant à domicile.
 - Pistes, non réalisées : lissage réglé par patient à la calibration (R2),

@@ -44,6 +44,14 @@ def courbe_compromis():
         t = r["total"]
         ax.plot(t["fa_par_24h_moyenne"], t["sensibilite_moyenne"] * 100, "o", ms=8,
                 color=COULEURS[m], mec="white", mew=2)
+    # scénario chronologique (réglage d'usine) : losanges évidés
+    for m, chrono in [("classique", "classique_chrono"), ("cnn_int8", "cnn_chrono")]:
+        chemin = RACINE / "resultats" / f"resume_{chrono}.json"
+        if chemin.exists():
+            t = json.loads(chemin.read_text(encoding="utf-8"))["total"]
+            ax.plot(t["fa_par_24h_moyenne"], t["sensibilite_moyenne"] * 100, "D", ms=8,
+                    mfc="white", mec=COULEURS[m], mew=2)
+    ax.plot([], [], "D", ms=7, mfc="white", mec=ENCRE_2, mew=1.5, label="scénario chronologique")
     ax.axvline(1, color=ENCRE_2, lw=0.8, ls=":")
     ax.text(1.05, 8, "cible :\n1 fausse alarme / 24 h", color=ENCRE_2, fontsize=8)
     ax.set_xscale("symlog", linthresh=1)
@@ -52,7 +60,8 @@ def courbe_compromis():
     ax.set_xlabel("fausses alarmes par 24 h (moyenne des 6 patients)")
     ax.set_ylabel("crises détectées (%, moyenne)")
     ax.set_title("Compromis détection / fausses alarmes\n"
-                 "courbe : tous les réglages (optimiste) · point : réglage choisi sur les autres patients",
+                 "courbe : tous les réglages (optimiste) · point : réglage choisi sur les autres patients\n"
+                 "rond : validation croisée · losange : scénario chronologique",
                  fontsize=9, loc="left", color=ENCRE)
     ax.legend(frameon=False, loc="lower right", bbox_to_anchor=(1, 0.08))
     ax.grid(alpha=0.25, lw=0.5)

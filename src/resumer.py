@@ -6,7 +6,7 @@ aucun réglage n'utilise les crises du patient évalué. Règle, fixée à l'ava
 maximiser la sensibilité moyenne sous la contrainte d'au plus CIBLE_FA fausses
 alarmes par 24 h en moyenne (à défaut, minimiser les fausses alarmes).
 
-Usage : python src/resumer.py [classique cnn classique_temporaux ...]
+Usage : python src/resumer.py [classique cnn classique_temporaux classique_chrono cnn_chrono ...]
 """
 import json
 import sys
@@ -33,7 +33,9 @@ def grille(methode, patients):
         d = charger_patient(p)
         proba = np.load(DOSSIER / "probas" / f"{methode}_{p}.npz")["proba"]
         assert len(proba) == len(d["t"]), (methode, p)
-        res[p] = {(n, s): evaluer_probas(proba, d["fichier"], d["t"], d["crises"], d["duree"], s, n)
+        # enregistrements testés (NaN : calibration du scénario chronologique, jamais testée)
+        testes = [i for i in range(len(d["duree"])) if not np.isnan(proba[d["fichier"] == i]).any()]
+        res[p] = {(n, s): evaluer_probas(proba, d["fichier"], d["t"], d["crises"], d["duree"], s, n, testes)
                   for n in LISSAGES for s in SEUILS}
     return res
 

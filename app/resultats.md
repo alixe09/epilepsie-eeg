@@ -1,4 +1,8 @@
-Validation croisée par enregistrement (chaque heure testée par un modèle qui ne l'a pas vue),
+**Scénario dispositif (chronologique)** : calibration sur les 3 premières crises, puis
+surveillance avec un modèle entraîné sur le passé seulement. Classique **22 / 31** crises,
+5,9 fausses alarmes / 24 h ; CNN 16 / 31, 2,5 / 24 h (107 h testées, surtout chb24).
+
+**Validation croisée** (probabilités utilisées par cette démo) : chaque heure testée par un modèle qui ne l'a pas vue,
 réglage d'alarme choisi sur les 5 autres patients. Tolérances SzCORE : alarme entre 30 s avant
 le début et 60 s après la fin de la crise.
 
