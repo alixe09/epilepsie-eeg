@@ -28,6 +28,6 @@
 ## Régénérer
 
 ```bash
-python -m pytest tests            # 23 tests : signal, métriques cliniques, sécurité, modèle embarqué, démo
+python -m pytest tests            # 24 tests : signal, métriques cliniques, sécurité, modèle embarqué, démo
 python src/verification_report.py # relance les tests et régénère la matrice
 ```

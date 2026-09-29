@@ -12,4 +12,4 @@
 | EX-06 | Quantification int8 sans perte clinique | Métriques cliniques float vs int8 sur les 166 h ; test `test_int8_proche_du_float…` | float 27/50, 1.01 FA/24 h · int8 28/50, 1.01 FA/24 h · accord des décisions ≥ 99.8% | ✅ conforme |
 | EX-07 | Défaut capteur → pas de fausse alarme silencieuse | 6 tests `test_securite` ; défauts simulés sur EEG réel (`src/robustesse.py`) | tests : 6/6 ok ; déconnexion et saturation bloquées ; **artefact de mouvement non détecté : 100% des fenêtres classées crise (CNN), 71% (classique)** | ⚠️ partiel |
 
-Tests automatisés : **23 réussis**, 0 en échec, 0 ignorés (sur 23).
+Tests automatisés : **24 réussis**, 0 en échec, 0 ignorés (sur 24).

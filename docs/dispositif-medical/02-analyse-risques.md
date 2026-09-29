@@ -50,6 +50,9 @@ enregistrement, les probabilités int8 elles-mêmes et l'amplitude des vraies cr
   une mise sur le marché : 29 à 48 % de crises manquées selon la méthode et le
   scénario, un patient entier non détecté (crises brèves), un patient à 13–34 fausses
   alarmes par jour dans le scénario chronologique (dérive).
+- Ces fréquences sont **très incertaines** : sur 6 patients, l'intervalle de confiance
+  à 95 % de la sensibilité va de 26 à 100 % (classique, scénario chronologique ;
+  `src/statistiques.py`). Une vraie estimation demanderait des dizaines de patients.
 - Le risque **artefact de mouvement** (R4) n'est pas évaluable sur CHB-MIT
   (patients hospitalisés) et serait probablement dominant à domicile.
 - Pistes, non réalisées : lissage réglé par patient à la calibration (R2),

@@ -1,0 +1,108 @@
+{
+ "chronologique": {
+  "classique_chrono": {
+   "crises": 31,
+   "detectees": 22,
+   "sensibilite": 0.7096774193548387,
+   "ic95_sensibilite_bootstrap_patients": [
+    0.25806451612903225,
+    1.0
+   ],
+   "fausses_alarmes": 26,
+   "heures": 106.75,
+   "fa_par_24h": 5.84543325526932,
+   "ic95_fa_poisson": [
+    3.818431074232433,
+    8.564914079578454
+   ],
+   "ic95_fa_bootstrap_patients": [
+    0.0,
+    18.82395003519435
+   ]
+  },
+  "cnn_chrono": {
+   "crises": 31,
+   "detectees": 16,
+   "sensibilite": 0.5161290322580645,
+   "ic95_sensibilite_bootstrap_patients": [
+    0.15384615384615385,
+    0.8461538461538461
+   ],
+   "fausses_alarmes": 11,
+   "heures": 106.75,
+   "fa_par_24h": 2.4730679156908666,
+   "ic95_fa_poisson": [
+    1.234546593102427,
+    4.425001632967184
+   ],
+   "ic95_fa_bootstrap_patients": [
+    0.0,
+    7.251991491080586
+   ]
+  },
+  "mcnemar": {
+   "seulement_classique": 6,
+   "seulement_cnn": 0,
+   "p_valeur": 0.03125
+  },
+  "signes_par_patient": {
+   "classique_mieux": 2,
+   "cnn_mieux": 0,
+   "egalite": 4,
+   "p_valeur": 0.5
+  }
+ },
+ "validation_croisee": {
+  "classique": {
+   "crises": 50,
+   "detectees": 35,
+   "sensibilite": 0.7,
+   "ic95_sensibilite_bootstrap_patients": [
+    0.3617021276595745,
+    0.9722222222222222
+   ],
+   "fausses_alarmes": 7,
+   "heures": 166.41611111111112,
+   "fa_par_24h": 1.0095176415210867,
+   "ic95_fa_poisson": [
+    0.40587845002206047,
+    2.079992173652867
+   ],
+   "ic95_fa_bootstrap_patients": [
+    0.0,
+    3.0661795584086304
+   ]
+  },
+  "cnn_int8": {
+   "crises": 50,
+   "detectees": 28,
+   "sensibilite": 0.56,
+   "ic95_sensibilite_bootstrap_patients": [
+    0.2978723404255319,
+    0.9166666666666666
+   ],
+   "fausses_alarmes": 7,
+   "heures": 166.41611111111112,
+   "fa_par_24h": 1.0095176415210867,
+   "ic95_fa_poisson": [
+    0.40587845002206047,
+    2.079992173652867
+   ],
+   "ic95_fa_bootstrap_patients": [
+    0.23452577747738212,
+    2.247386462526711
+   ]
+  },
+  "mcnemar": {
+   "seulement_classique": 12,
+   "seulement_cnn": 5,
+   "p_valeur": 0.143463134765625
+  },
+  "signes_par_patient": {
+   "classique_mieux": 2,
+   "cnn_mieux": 1,
+   "egalite": 3,
+   "p_valeur": 1.0
+  }
+ }
+}

@@ -41,19 +41,19 @@ def alarmes(proba, t, seuil, n_lissage=1, refractaire=REFRACTAIRE):
 
 def evaluer(alarmes_par_fichier, crises_par_fichier, durees):
     """Métriques sur un ensemble d'enregistrements (listes alignées)."""
-    delais, n_crises, n_detectees, n_fa = [], 0, 0, 0
+    delais, detection, n_fa = [], [], 0
     for al, crises in zip(alarmes_par_fichier, crises_par_fichier):
         al = np.asarray(al)
         tolere = np.zeros(len(al), bool)
         for debut, fin in crises:
-            n_crises += 1
             dedans = (al >= debut - TOLERANCE_AVANT) & (al <= fin + TOLERANCE_APRES)
+            detection.append(bool(dedans.any()))
             if dedans.any():
-                n_detectees += 1
                 delais.append(al[dedans][0] - debut)
             tolere |= dedans
         n_fa += int((~tolere).sum())
     heures = float(np.sum(durees)) / 3600
+    n_crises, n_detectees = len(detection), sum(detection)
     return {
         "crises": n_crises,
         "detectees": n_detectees,
@@ -63,6 +63,7 @@ def evaluer(alarmes_par_fichier, crises_par_fichier, durees):
         "fa_par_24h": n_fa / heures * 24 if heures else np.nan,
         "delais": delais,
         "delai_median": float(np.median(delais)) if delais else np.nan,
+        "detection": detection,  # une valeur par crise, dans l'ordre des enregistrements
     }
 
 

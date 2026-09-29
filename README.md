@@ -34,7 +34,8 @@ dispositif médical.
   postérieures au test) : méthode classique 35 / 50 à 1,0 fausse alarme par 24 h, CNN
   28 / 50. Délai médian 10 à 13 s selon la méthode et le scénario.
 - **La méthode classique détecte plus de crises dans les deux scénarios** ; le CNN
-  détecte un peu plus vite.
+  détecte un peu plus vite. **Mais l'écart n'est pas établi** : il tient à 2 patients sur
+  6, et les intervalles de confiance sont très larges (voir « Incertitude »).
 - **Le CNN tient dans 29 Ko en int8**, sans perte clinique par rapport au float.
 - **Un résultat corrigé en route** : avec une grille de seuils arrêtée à 0,999, le CNN
   semblait à égalité (35 / 50). C'était un effet de bord de la grille (détails plus bas).
@@ -167,9 +168,10 @@ Lecture :
   tolérait plus de fausses alarmes. Une partie de l'écart vient aussi du transfert du
   réglage d'un patient à l'autre : le CNN est très confiant (probabilités de 0,99999 et
   plus), et son seuil utile, entre 0,9995 et 0,999999, varie d'un patient à l'autre ; celui
-  de la méthode classique (0,94) se transpose mieux. Avec 50 crises, l'écart reste
-  fragile (7 crises, surtout chez chb23 et chb24), mais il va dans le même sens qu'emg-prothese :
-  à données limitées, la méthode classique est plus robuste, et plus facile à expliquer.
+  de la méthode classique (0,94) se transpose mieux. L'écart tient à chb23 et chb24 et
+  n'est pas statistiquement établi (voir « Incertitude ») ; il va dans le même sens
+  qu'emg-prothese : à données limitées, la méthode classique est au moins aussi bonne, et
+  plus facile à expliquer.
 - **Le CNN garde deux atouts** : il détecte plus vite (délai médian 12 s contre 13 s,
   5 à 6 s de moins chez chb01 et chb05) et fait moins de fausses alarmes chez chb24.
 - **Avec la méthode classique, 4 patients sur 6 sont proches d'un usage réel** (toutes
@@ -198,6 +200,34 @@ Lecture :
 Détails par patient et courbes complètes : `resultats/resume_*.json`, régénérés par
 `python src/resumer.py classique cnn cnn_int8 classique_temporaux classique_chrono cnn_chrono`.
 
+### Incertitude
+
+6 patients, c'est peu : les chiffres ci-dessus doivent se lire avec leurs intervalles de
+confiance ([`src/statistiques.py`](src/statistiques.py), `resultats/statistiques.json`).
+
+| | Crises détectées [IC 95 %] | Fausses alarmes / 24 h [IC 95 % Poisson] |
+|---|---|---|
+| Chronologique, classique | 22 / 31 = 71 % [26–100 %] | 5,9 [3,8–8,6] |
+| Chronologique, CNN | 16 / 31 = 52 % [15–85 %] | 2,5 [1,2–4,4] |
+| Validation croisée, classique | 35 / 50 = 70 % [36–97 %] | 1,0 [0,4–2,1] |
+| Validation croisée, CNN int8 | 28 / 50 = 56 % [30–92 %] | 1,0 [0,4–2,1] |
+
+- **Intervalles de la sensibilité par bootstrap sur les patients**, pas sur les crises :
+  les crises d'un même enfant se ressemblent (chb16 : 10 crises, toutes manquées). Un
+  intervalle calculé crise par crise serait deux à trois fois trop étroit.
+- **Les fausses alarmes dépendent surtout d'un patient** : l'intervalle de Poisson
+  ci-dessus suppose des alarmes indépendantes ; en rééchantillonnant les patients, il va
+  de 0 à 19 par 24 h (classique, chronologique), à cause de chb24.
+- **Classique contre CNN, sur les mêmes crises** : en scénario chronologique, 6 crises ne
+  sont vues que par la méthode classique et aucune que par le CNN (McNemar exact,
+  p = 0,03) ; en validation croisée, 12 contre 5 (p = 0,14). **Mais toutes ces crises
+  discordantes viennent de chb23 et chb24.** Compté par patient, la méthode classique
+  fait mieux chez 2 patients, le CNN chez 0 ou 1, égalité chez les autres (test des
+  signes, p = 0,5 et 1) : on ne peut pas conclure qu'une méthode est meilleure.
+- **Pour trancher, il faudrait plus de patients**, pas plus de crises chez les mêmes :
+  les 18 autres patients de CHB-MIT (148 crises) n'ont pas été téléchargés faute de
+  place sur le disque (le plus rentable : chb12, 40 crises pour 1,2 Go d'EDF).
+
 ### Embarqué
 
 | | Classique | CNN int8 |
@@ -216,8 +246,10 @@ crise, et toutes les probabilités basses tombaient à 0,5.
 
 ### Limites
 
-- 6 patients, 50 crises : les intervalles de confiance sont larges. Un seul
-  entraînement par configuration.
+- 6 patients sur les 24 de CHB-MIT : les intervalles de confiance (voir « Incertitude »)
+  vont de 26 à 100 % de crises détectées, et aucune différence entre méthodes n'est
+  établie au niveau des patients. Un seul entraînement par configuration (la variabilité
+  due à l'initialisation du CNN n'est pas mesurée).
 - EEG **hospitalier** de 18 dérivations, patients alités, souvent en sevrage de
   traitement : un appareil porté aurait moins d'électrodes et beaucoup plus d'artefacts
   de mouvement. Un artefact simulé de 800 µV à 1,5 Hz est pris pour une crise par les
@@ -254,7 +286,7 @@ La démarche a trouvé **trois défauts, corrigés avant les résultats finaux**
    réelles au plus et aucune fenêtre de crise.
 
 ```bash
-python -m pytest tests            # 23 tests : signal, métriques cliniques, sécurité, modèle int8, démo
+python -m pytest tests            # 24 tests : signal, métriques cliniques, sécurité, modèle int8, démo
 python src/verification_report.py # relance les tests et régénère la matrice de traçabilité
 ```
 
@@ -303,6 +335,7 @@ python src/export_tflite.py               # int8 + probabilités int8
 python src/classique.py --decoupage chrono     # scénario chronologique
 python src/cnn.py --decoupage chrono
 python src/resumer.py classique classique_temporaux cnn cnn_int8 classique_chrono cnn_chrono
+python src/statistiques.py                # intervalles de confiance, tests appariés
 python src/robustesse.py
 python src/embarque.py
 python src/make_demo_data.py
@@ -319,9 +352,10 @@ src/
   caracteristiques.py  classique.py              méthode classique
   cnn.py  export_tflite.py  embarque.py          réseau de neurones, int8, budget embarqué
   decoupage.py  evaluation.py  resumer.py        validation croisée, alarmes, métriques cliniques
+  statistiques.py                                intervalles de confiance, tests appariés
   robustesse.py  verification_report.py          analyse des risques, traçabilité
   make_demo_data.py  figures.py
-tests/                                           23 tests pytest
+tests/                                           24 tests pytest
 app/                                             démo Streamlit (4 extraits, 8 Mo)
 resultats/                                       résumés JSON, modèles int8 (.tflite)
 docs/                                            figures, dossier dispositif médical

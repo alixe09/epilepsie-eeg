@@ -59,3 +59,10 @@ def test_blocs_chronologiques_n_utilisent_que_le_passe():
     np.testing.assert_array_equal(bloc, [0, 0, 0, 0, 0, 1, 1, 1, 2])
     for b in range(1, bloc.max() + 1):  # tout l'entraînement précède le test
         assert np.flatnonzero(bloc < b).max() < np.flatnonzero(bloc == b).min()
+
+
+def test_intervalle_poisson_zero_evenement():
+    """0 fausse alarme observée : la borne haute à 95 % est de 3,69 (valeur de référence)."""
+    from statistiques import ic_poisson
+    bas, haut = ic_poisson(0)
+    assert bas == 0 and abs(haut - 3.689) < 1e-3
