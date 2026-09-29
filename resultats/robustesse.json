@@ -1,0 +1,44 @@
+{
+ "aucun défaut (référence)": {
+  "classique_crise": 0.0,
+  "cnn_crise": 0.0,
+  "bloquees_par_controle": 0.0,
+  "classique_crise_apres_controle": 0.0,
+  "cnn_crise_apres_controle": 0.0
+ },
+ "appareil déconnecté (tout plat)": {
+  "classique_crise": 0.0,
+  "cnn_crise": 0.0,
+  "bloquees_par_controle": 1.0,
+  "classique_crise_apres_controle": 0.0,
+  "cnn_crise_apres_controle": 0.0
+ },
+ "2 électrodes décollées": {
+  "classique_crise": 0.0,
+  "cnn_crise": 0.0,
+  "bloquees_par_controle": 0.0,
+  "classique_crise_apres_controle": 0.0,
+  "cnn_crise_apres_controle": 0.0
+ },
+ "6 dérivations saturées": {
+  "classique_crise": 0.0,
+  "cnn_crise": 0.0,
+  "bloquees_par_controle": 1.0,
+  "classique_crise_apres_controle": 0.0,
+  "cnn_crise_apres_controle": 0.0
+ },
+ "artefact de mouvement 800 µV, 1,5 Hz": {
+  "classique_crise": 0.71,
+  "cnn_crise": 1.0,
+  "bloquees_par_controle": 0.0,
+  "classique_crise_apres_controle": 0.71,
+  "cnn_crise_apres_controle": 1.0
+ },
+ "pointes d'électrode 1 500 µV": {
+  "classique_crise": 0.0,
+  "cnn_crise": 0.0,
+  "bloquees_par_controle": 0.0,
+  "classique_crise_apres_controle": 0.0,
+  "cnn_crise_apres_controle": 0.0
+ }
+}

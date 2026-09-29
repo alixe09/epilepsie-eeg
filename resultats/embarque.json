@@ -1,0 +1,45 @@
+{
+ "cnn": {
+  "parametres": 16049,
+  "macs_par_decision": 1368128,
+  "taille_int8_ko": [
+   29.416,
+   29.416
+  ],
+  "latence_int8_ms_pc": 0.19304350003949367,
+  "accord_float_int8": {
+   "chb01": {
+    "ecart_moyen": 7.576910138595849e-05,
+    "accord_decision_0_5": 0.9999108746623521
+   },
+   "chb05": {
+    "ecart_moyen": 4.3323605495970696e-05,
+    "accord_decision_0_5": 0.999971488242464
+   },
+   "chb08": {
+    "ecart_moyen": 0.0009452445083297789,
+    "accord_decision_0_5": 0.9991801342356489
+   },
+   "chb16": {
+    "ecart_moyen": 0.00013564927212428302,
+    "accord_decision_0_5": 0.9998975754649342
+   },
+   "chb23": {
+    "ecart_moyen": 6.747221777914092e-05,
+    "accord_decision_0_5": 0.99993722733122
+   },
+   "chb24": {
+    "ecart_moyen": 0.0016942168585956097,
+    "accord_decision_0_5": 0.9983551128575345
+   }
+  }
+ },
+ "classique": {
+  "caracteristiques": 144,
+  "arbres": 66,
+  "noeuds": 1914,
+  "taille_modele_ko": 418.402,
+  "latence_caracteristiques_ms_pc": 0.49069999993662344,
+  "latence_modele_ms_pc": 2.1357619999616873
+ }
+}
