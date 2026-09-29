@@ -125,7 +125,10 @@ with st.sidebar:
     st.markdown(f"**Réglage d'usine** (choisi sur les 5 autres patients) : seuil {r['seuil']:g}, "
                 f"moyenne sur {r['lissage']} s, pas de nouvelle alarme pendant 60 s.")
     if st.toggle("Modifier le réglage"):
-        r = {"seuil": st.slider("Seuil", 0.1, 0.999, float(r["seuil"]), 0.005),
+        seuils = sorted({*np.round(np.arange(0.1, 0.99, 0.01), 2).tolist(), 0.99, 0.995, 0.998, 0.999,
+                         0.9995, 0.9998, 0.9999, 0.99995, 0.99998, 0.99999, 0.999995, 0.999998,
+                         0.999999, float(r["seuil"])})
+        r = {"seuil": st.select_slider("Seuil", seuils, float(r["seuil"]), format_func=lambda v: f"{v:g}"),
              "lissage": st.select_slider("Moyenne sur (s)", [1, 3, 5, 10], r["lissage"])}
     st.divider()
     st.markdown(

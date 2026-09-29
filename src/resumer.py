@@ -19,8 +19,10 @@ from evaluation import evaluer_probas
 
 DOSSIER = RACINE / "resultats"
 CIBLE_FA = 1.0  # fausse alarme par 24 h
+# jusqu'à 1 − 1e-6 : le CNN, très confiant, a besoin de seuils au-delà de 0,999
 SEUILS = np.round(np.concatenate([np.arange(0.1, 0.9, 0.05), np.arange(0.9, 0.99, 0.01),
-                                  [0.99, 0.995, 0.998, 0.999]]), 3)
+                                  [0.99, 0.995, 0.998, 0.999, 0.9995, 0.9998, 0.9999,
+                                   0.99995, 0.99998, 0.99999, 0.999995, 0.999998, 0.999999]]), 6)
 LISSAGES = [1, 3, 5, 10]
 
 

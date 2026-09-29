@@ -20,16 +20,18 @@ démo Streamlit, dossier dispositif médical).
 ⚠️ **Disclaimer** : projet pédagogique / recherche de stage. Ce n'est **pas** un
 dispositif médical.
 
-![Crise de 40 s chez chb01 : les deux méthodes déclenchent l'alarme 16 s après le début](docs/exemple_detection.png)
+![Crise de 40 s chez chb01 : alarme 11 s après le début pour le CNN, 16 s pour la méthode classique](docs/exemple_detection.png)
 
 ## En bref
 
 - **166 h d'EEG, 6 enfants, 50 crises** (CHB-MIT). Chaque heure est testée par un modèle
   qui ne l'a jamais vue, et le réglage d'alarme de chaque patient est choisi **sur les
   5 autres**.
-- **35 crises sur 50 détectées, 1,0 fausse alarme par 24 h, délai médian 13–16 s**, aussi
-  bien pour la méthode classique que pour le réseau de neurones.
-- **Le CNN tient dans 29 Ko en int8**, sans aucune perte clinique par rapport au float.
+- **Méthode classique : 35 crises sur 50 détectées, 1,0 fausse alarme par 24 h**, délai
+  médian 13 s. **Le CNN fait moins bien : 28 / 50** au même niveau de fausses alarmes.
+- **Le CNN tient dans 29 Ko en int8**, sans perte clinique par rapport au float.
+- **Un résultat corrigé en route** : avec une grille de seuils arrêtée à 0,999, le CNN
+  semblait à égalité (35 / 50). C'était un effet de bord de la grille (détails plus bas).
 - **Échec assumé** : les 10 crises de chb16, très brèves (6–14 s), ne sont jamais détectées.
 - **Le dossier dispositif médical a trouvé 3 défauts**, corrigés avant les résultats
   finaux, et 2 risques qui restent ouverts.
@@ -93,33 +95,50 @@ passe-bande 0,5–40 Hz (Butterworth, filtrage avant uniquement), fenêtres de 4
 
 | Patient | Classique : crises | FA / 24 h | Délai méd. | CNN int8 : crises | FA / 24 h | Délai méd. |
 |---|---|---|---|---|---|---|
-| chb01 | 6 / 7 | 0,0 | 15 s | **7 / 7** | 0,0 | 13 s |
-| chb05 | 5 / 5 | 0,0 | 17 s | 5 / 5 | 0,0 | 16 s |
-| chb08 | 5 / 5 | **0,0** | 14 s | 5 / 5 | 2,4 | 23 s |
+| chb01 | 6 / 7 | 0,0 | 15 s | **7 / 7** | 0,0 | 9 s |
+| chb05 | 5 / 5 | 0,0 | 17 s | 5 / 5 | 0,0 | 12 s |
+| chb08 | 5 / 5 | **0,0** | 14 s | 5 / 5 | 2,4 | 20 s |
 | chb16 | 0 / 10 | 0,0 | — | 0 / 10 | 0,0 | — |
-| chb23 | 7 / 7 | 0,9 | 24 s | 7 / 7 | 0,9 | 14 s |
-| chb24 | **12 / 16** | 6,8 | 7 s | 11 / 16 | **4,5** | 16 s |
-| **Total, 166 h** | **35 / 50** | **1,0** | **13 s** | **35 / 50** | **1,0** | **16 s** |
+| chb23 | **7 / 7** | **0,9** | 24 s | 4 / 7 | 1,8 | 25 s |
+| chb24 | **12 / 16** | 6,8 | 7 s | 7 / 16 | **3,4** | 12 s |
+| **Total, 166 h** | **35 / 50** | **1,0** | 13 s | 28 / 50 | **1,0** | **12 s** |
+
+(CNN en float : 27 / 50, 1,0 FA / 24 h.)
 
 ![Compromis entre crises détectées et fausses alarmes](docs/compromis_detection_fa.png)
 
 Lecture :
 
-- **Les deux méthodes font jeu égal** au total, avec des profils différents : le CNN ne
-  manque aucune crise chez chb01 et fait moins de fausses alarmes chez chb24 ; la méthode
-  classique n'en fait aucune chez chb08. Avec 50 crises, aucune différence n'est
-  statistiquement établie. À performance égale, la méthode classique est plus facile à
-  expliquer à un clinicien.
-- **4 patients sur 6 sont proches d'un usage réel** (toutes ou presque toutes les crises,
-  ≤ 1 fausse alarme par jour). **chb24 en reste loin** : 5 à 7 fausses alarmes par jour
-  sont trop pour une famille.
+- **La méthode classique fait mieux avec le réglage d'usine** (35 contre 28 crises, au
+  même taux de fausses alarmes). Sur la courbe optimiste (meilleur réglage global), le
+  CNN est derrière sous 1 fausse alarme / 24 h (71 % contre 80 % des crises en moyenne)
+  et devant au-delà de 2 (92 % contre 85 % à 5 FA / 24 h) : il gagnerait si l'on
+  tolérait plus de fausses alarmes. Une partie de l'écart vient aussi du transfert du
+  réglage d'un patient à l'autre : le CNN est très confiant (probabilités de 0,99999 et
+  plus), et son seuil utile, entre 0,9995 et 0,999999, varie d'un patient à l'autre ; celui
+  de la méthode classique (0,94) se transpose mieux. Avec 50 crises, l'écart reste
+  fragile (7 crises, surtout chez chb23 et chb24), mais il va dans le même sens qu'emg-prothese :
+  à données limitées, la méthode classique est plus robuste, et plus facile à expliquer.
+- **Le CNN garde deux atouts** : il détecte plus vite (délai médian 12 s contre 13 s,
+  5 à 6 s de moins chez chb01 et chb05) et fait moins de fausses alarmes chez chb24.
+- **Avec la méthode classique, 4 patients sur 6 sont proches d'un usage réel** (toutes
+  ou presque toutes les crises, ≤ 1 fausse alarme par jour). **chb24 en reste loin** : 3
+  à 7 fausses alarmes par jour selon la méthode, c'est trop pour une famille.
 - **chb16 est entièrement manqué, et c'est instructif** : ses crises durent 6 à 14 s. Le
   réglage choisi sur les autres patients (moyenne sur 10 s, seuil haut) empêche une crise
   aussi brève de franchir le seuil. Le modèle, lui, les voit souvent (méthode classique :
   probabilité ≥ 0,87 sur au moins une fenêtre pendant 6 crises sur 10). Un réglage individuel en récupère 3 sur 10 sans fausse
   alarme : la durée typique des crises d'un patient est un paramètre de calibration.
-- **Délai médian de 13–16 s** : l'alarme arrive pendant la crise, pas avant ; ce
+- **Délai médian de 12–13 s** : l'alarme arrive pendant la crise, pas avant ; ce
   système détecte, il ne prédit pas.
+- **Correction en cours de projet** : la grille de seuils s'arrêtait d'abord à 0,999.
+  Pour 5 patients sur 6, aucun réglage ne tenait alors ≤ 1 fausse alarme / 24 h sur les
+  autres patients, et la règle se rabattait sur « le moins de fausses alarmes », soit le
+  bord de la grille (0,999), qui s'est trouvé bien marcher : **35 / 50 pour le CNN,
+  égalité apparente**. Grille étendue jusqu'à 1 − 10⁻⁶, la contrainte devient atteignable,
+  la règle fonctionne comme prévu… et le CNN tombe à 28 / 50. Le chiffre retenu est
+  celui de la grille étendue : revenir en arrière parce qu'il est moins flatteur serait
+  choisir le résultat après l'avoir vu.
 - **Montage réduit « portable »** (4 dérivations temporales, proches d'électrodes autour
   de l'oreille, méthode classique) : 36 / 50 crises mais 2,3 fausses alarmes par 24 h
   (point vert sous la courbe). Réduire le nombre d'électrodes coûte surtout en fausses
@@ -135,13 +154,13 @@ Détails par patient et courbes complètes : `resultats/resume_*.json`, régén�
 | Taille du modèle | 66 arbres, ~1 900 nœuds | **29 Ko** (TensorFlow Lite int8, poids et activations) |
 | Calcul par décision (1 / s) | 18 FFT de 512 points + parcours des arbres | **1,4 M multiplications-accumulations** |
 | Temps de calcul sur PC | 0,6 ms (caractéristiques) | 0,23 ms |
-| Perte due à l'int8 | — | aucune : 35 / 50 et 1,0 FA / 24 h, décisions identiques à ≥ 99,8 % |
+| Perte due à l'int8 | — | aucune : 28 / 50 (float : 27 / 50) à 1,0 FA / 24 h, décisions identiques à ≥ 99,8 % |
 
 1,4 M opérations par seconde, c'est une petite fraction de ce que calcule un
 microcontrôleur Cortex-M4 ; la latence sur cible n'a pas été mesurée (pas de carte).
 Pièges rencontrés et corrigés ([`src/export_tflite.py`](src/export_tflite.py)) : la
-sigmoïde quantifiée plafonnait à 0,996 alors que le seuil utile est 0,999 (on quantifie
-désormais le logit) ; la calibration de la quantification ne voyait que des fenêtres de
+sigmoïde quantifiée plafonnait à 0,996 alors que les seuils utiles dépassent 0,999 (on
+quantifie désormais le logit, et les seuils jusqu'à 0,999999 restent atteignables) ; la calibration de la quantification ne voyait que des fenêtres de
 crise, et toutes les probabilités basses tombaient à 0,5.
 
 ### Limites
@@ -154,8 +173,9 @@ crise, et toutes les probabilités basses tombaient à 0,5.
   deux méthodes ([`src/robustesse.py`](src/robustesse.py)).
 - Modèles spécifiques au patient : il faut avoir enregistré des crises pour calibrer.
   Le cas « nouveau patient sans calibration » n'est pas évalué.
-- La grille de seuils s'arrête à 0,999 et c'est la valeur retenue pour le CNN : un seuil
-  plus haut pourrait mieux faire.
+- Le CNN dépend de seuils extrêmes (0,9995 à 0,999999) : une probabilité aussi saturée
+  est fragile (calibration, dérive du signal). Un seuil sur le logit ou une calibration
+  des probabilités par patient seraient à essayer.
 - Plis non chronologiques (un modèle peut s'entraîner sur des heures postérieures au
   test), comme la plupart des travaux sur CHB-MIT.
 
@@ -180,7 +200,7 @@ La démarche a trouvé **trois défauts, corrigés avant les résultats finaux**
    réelles au plus et aucune fenêtre de crise.
 
 ```bash
-python -m pytest tests            # 20 tests : signal, métriques cliniques, sécurité, modèle int8
+python -m pytest tests            # 22 tests : signal, métriques cliniques, sécurité, modèle int8, démo
 python src/verification_report.py # relance les tests et régénère la matrice de traçabilité
 ```
 
@@ -193,10 +213,10 @@ avec le réglage d'usine de chaque patient ; on peut aussi modifier le réglage 
 le compromis détection / fausses alarmes. Le cas chb16 (crises de 6 et 8 s) montre
 l'échec.
 
-![Démo : crise de chb01 détectée par le CNN int8, alarme 16 s après le début, aucune fausse alarme](docs/demo-detection.png)
+![Démo : crise de chb01 détectée par le CNN int8, alarme 11 s après le début, aucune fausse alarme](docs/demo-detection.png)
 
 *chb01_03, CNN int8 ([ouvrir ce cas](https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/?enregistrement=chb01_03&t=320)) : pendant la crise
-(bande rouge), la probabilité lissée atteint le seuil de 0,999 et l'alarme part 16 s après le
+(bande rouge), la probabilité lissée atteint le seuil de 0,999999 et l'alarme part 11 s après le
 début annoté.*
 
 ![Démo : crise de 6 s chez chb16, manquée par la méthode classique](docs/demo-crise-breve.png)
@@ -245,7 +265,7 @@ src/
   decoupage.py  evaluation.py  resumer.py        validation croisée, alarmes, métriques cliniques
   robustesse.py  verification_report.py          analyse des risques, traçabilité
   make_demo_data.py  figures.py
-tests/                                           20 tests pytest
+tests/                                           22 tests pytest
 app/                                             démo Streamlit (4 extraits, 8 Mo)
 resultats/                                       résumés JSON, modèles int8 (.tflite)
 docs/                                            figures, dossier dispositif médical

@@ -14,10 +14,10 @@
 
 ## En bref
 
-- **Conforme** : délai médian (13–16 s), traitement causal, modèle embarquable
+- **Conforme** : délai médian (12–13 s), traitement causal, modèle embarquable
   (29 Ko, 1,4 M multiplications par seconde), quantification int8 sans perte.
-- **Non conforme** : sensibilité (35 / 50 crises) et fausses alarmes par patient
-  (chb24 à 4,5–6,8 / 24 h).
+- **Non conforme** : sensibilité (35 / 50 crises en classique, 28 / 50 pour le CNN) et
+  fausses alarmes par patient (chb24 à 3,4–6,8 / 24 h).
 - **Défauts trouvés par la démarche et corrigés** : un modèle sur quatre qui
   prédisait « crise » en permanence, deux erreurs de quantification int8, un
   seuil de saturation qui aurait bloqué de vraies crises.
@@ -27,6 +27,6 @@
 ## Régénérer
 
 ```bash
-python -m pytest tests            # 20 tests : signal, métriques cliniques, sécurité, modèle embarqué
+python -m pytest tests            # 22 tests : signal, métriques cliniques, sécurité, modèle embarqué, démo
 python src/verification_report.py # relance les tests et régénère la matrice
 ```
