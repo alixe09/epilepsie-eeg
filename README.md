@@ -193,6 +193,19 @@ avec le réglage d'usine de chaque patient ; on peut aussi modifier le réglage 
 le compromis détection / fausses alarmes. Le cas chb16 (crises de 6 et 8 s) montre
 l'échec.
 
+![Démo : crise de chb01 détectée par le CNN int8, alarme 16 s après le début, aucune fausse alarme](docs/demo-detection.png)
+
+*chb01_03, CNN int8 ([ouvrir ce cas](https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/?enregistrement=chb01_03&t=320)) : pendant la crise
+(bande rouge), la probabilité lissée atteint le seuil de 0,999 et l'alarme part 16 s après le
+début annoté.*
+
+![Démo : crise de 6 s chez chb16, manquée par la méthode classique](docs/demo-crise-breve.png)
+
+*chb16_17, méthode classique ([ouvrir ce cas](https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/?enregistrement=chb16_17&methode=classique&t=205)) :
+la crise de 6 s est bien visible sur l'EEG, mais la moyenne des 10 dernières secondes plafonne
+vers 0,3, loin du seuil de 0,94. Le dispositif reste en « surveillance » : c'est la limite
+décrite dans les résultats (risque R2 du dossier dispositif médical).*
+
 ```bash
 streamlit run app/streamlit_app.py
 ```

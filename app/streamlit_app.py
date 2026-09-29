@@ -84,7 +84,7 @@ def trace_eeg(d, maintenant, t_alarmes):
 def trace_proba(d, proba, seuil, lissage, t_alarmes, maintenant):
     t = d["t"]
     vu = t <= maintenant
-    fig, ax = plt.subplots(figsize=(11, 2.4))
+    fig, ax = plt.subplots(figsize=(11, 2.6))
     for c0, c1 in d["crises"]:
         ax.axvspan(c0, c1, color="#e4572e", alpha=0.15, lw=0, label="crise annotée")
     ax.plot(t[vu], proba[vu], lw=0.6, color="#9aa7b4", label="probabilité par seconde")
@@ -100,7 +100,8 @@ def trace_proba(d, proba, seuil, lissage, t_alarmes, maintenant):
     ax.spines[["top", "right"]].set_visible(False)
     poignees, etiquettes = ax.get_legend_handles_labels()
     uniques = dict(zip(etiquettes, poignees))
-    ax.legend(uniques.values(), uniques.keys(), fontsize=7, loc="upper left", ncol=4, frameon=False)
+    ax.legend(uniques.values(), uniques.keys(), fontsize=7, loc="lower left", bbox_to_anchor=(0, 1.0),
+              ncol=4, frameon=False)
     fig.tight_layout()
     return fig
 
