@@ -13,6 +13,10 @@ Quatrième volet d'un portfolio en IA appliquée à la santé, après
 avec la même démarche (pipeline complet, évaluation honnête, métriques orientées patient,
 démo Streamlit, dossier dispositif médical).
 
+🔗 **Démo en ligne** : [Ouvrir l'application](https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/)
+· crise détectée : [chb01, crise de 40 s](https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/?enregistrement=chb01_03&t=320)
+· échec : [chb16, crise de 6 s manquée](https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/?enregistrement=chb16_17&methode=classique&t=205)
+
 ⚠️ **Disclaimer** : projet pédagogique / recherche de stage. Ce n'est **pas** un
 dispositif médical.
 
@@ -192,6 +196,10 @@ l'échec.
 ```bash
 streamlit run app/streamlit_app.py
 ```
+
+En ligne : [https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/](https://alixe09-epilepsie-eeg-appstreamlit-app-cfse0q.streamlit.app/). Lien direct vers un cas précis :
+`?enregistrement=chb16_17&methode=classique&t=205` (enregistrement, `cnn_int8` ou
+`classique`, instant en secondes dans l'extrait).
 
 ## Reproduire
 

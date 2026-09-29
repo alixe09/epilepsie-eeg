@@ -109,9 +109,16 @@ st.title("🧠 Détection de crises d'épilepsie sur EEG portable")
 st.caption("⚠️ Projet pédagogique — ce n'est **pas** un dispositif médical. "
            "Données : CHB-MIT Scalp EEG Database (PhysioNet, ODC-By), EEG pédiatrique.")
 
+# lien direct : ?enregistrement=chb16_17&methode=classique&t=1700
+parametres = st.query_params
+nom_url = parametres.get("enregistrement")
+methode_url = parametres.get("methode")
+
 with st.sidebar:
-    nom = st.selectbox("Enregistrement", list(EXEMPLES), format_func=lambda n: f"{n} — {EXEMPLES[n]}")
-    methode = st.radio("Algorithme", list(METHODES), format_func=METHODES.get)
+    nom = st.selectbox("Enregistrement", list(EXEMPLES), format_func=lambda n: f"{n} — {EXEMPLES[n]}",
+                       index=list(EXEMPLES).index(nom_url) if nom_url in EXEMPLES else 0)
+    methode = st.radio("Algorithme", list(METHODES), format_func=METHODES.get,
+                       index=list(METHODES).index(methode_url) if methode_url in METHODES else 0)
     d = charger(nom)
     r = d["reglages"][methode]
     st.markdown(f"**Réglage d'usine** (choisi sur les 5 autres patients) : seuil {r['seuil']:g}, "
@@ -133,8 +140,13 @@ t_alarmes = alarmes(proba, d["t"], r["seuil"], r["lissage"])
 duree = float(d["t"][-1])
 
 if "t" not in st.session_state or st.session_state.get("nom") != nom:
-    st.session_state.update(t=float(max(FENETRE_AFFICHEE, d["crises"][0][0] - 40)) if len(d["crises"]) else 60.0,
-                            nom=nom, lecture=False)
+    t0 = float(max(FENETRE_AFFICHEE, d["crises"][0][0] - 40)) if len(d["crises"]) else 60.0
+    if "t" in parametres and nom == nom_url and "nom" not in st.session_state:
+        try:
+            t0 = float(np.clip(float(parametres["t"]), FENETRE_AFFICHEE, duree))
+        except ValueError:
+            pass
+    st.session_state.update(t=t0, nom=nom, lecture=False)
 
 if st.session_state.lecture:  # avance avant de créer le curseur (Streamlit l'exige)
     st.session_state.t = min(st.session_state.t + PAS_LECTURE, duree)
